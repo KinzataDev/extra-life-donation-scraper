@@ -1,0 +1,16 @@
+{
+  "name": "extra-life-script",
+  "version": "1.0.0",
+  "description": "Script to poll Extra Life donation data and format output",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Maximilian Witte (KinzataDev)",
+  "license": "ISC",
+  "dependencies": {
+	"sleep": "latest",
+	"sprintf": "latest",
+	"exec": "latest"
+  }
+}
