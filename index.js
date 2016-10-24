@@ -15,13 +15,16 @@ var largestDonations = [];
 var totalRequests = userIds.length;
 var numRequests = 0;
 
-var MAX_NAME_LENGTH = 20;
+var MAX_NAME_LENGTH = 50;
 var RECENT_DONATIONS_LIMIT = 5;
 var LARGEST_DONATIONS_LIMIT = 10;
 
-var RECENT_DONOR_OUTPUT_FILE = "/tmp/recent_donation.txt";
 var LARGEST_DONOR_OUTPUT_FILE = "/tmp/largest_donation.txt";
 
+var TOP_DONORS_STRING = "Top Donors: ";
+var RECENT_DONORS_STRING = "Most Recent Donors: ";
+var FILLER_STRING_1 = "CHANGE ME | ";
+var FILLER_STRING_2 = "CHANGE ME | ";
 var NULL_VALUE_REPLACEMENT = "Anonymous";
 
 // Reset holding arrays, loop over users and pull down their donations
@@ -140,28 +143,25 @@ function sortAndRender() {
 	});
 
 
-	var largestOutput = "";
+	var outputString = TOP_DONORS_STRING;
 	for( var i = 0; i < LARGEST_DONATIONS_LIMIT; i++ ) {
-		var largestString = sprintf("%-" + MAX_NAME_LENGTH + "s: $%s\n", largestDonations[i].name, largestDonations[i].amount);
-		largestOutput = largestOutput + largestString;
+		var largestString = sprintf("%s: $%s | ", largestDonations[i].name, largestDonations[i].amount);
+		outputString = outputString + largestString;
 	}
-	fs.writeFile(LARGEST_DONOR_OUTPUT_FILE, largestOutput, function(err) {
-		if(err) {
-			return console.log(err);
-		}
-	});
 
-	var recentOutput = "";
+	outputString = outputString + FILLER_STRING_1;
+	outputString = outputString + RECENT_DONORS_STRING;
 	for( var i = 0; i < RECENT_DONATIONS_LIMIT; i++ ) {
-		var recentString = sprintf("%-" + MAX_NAME_LENGTH + "s: %s\n", mostRecentDonations[i].donorName, mostRecentDonations[i].donationAmount);
-		recentOutput = recentOutput + recentString;
+		var recentString = sprintf("%s: %s | ", mostRecentDonations[i].donorName, mostRecentDonations[i].donationAmount);
+		outputString = outputString + recentString;
 	}
-	fs.writeFile(RECENT_DONOR_OUTPUT_FILE, recentOutput, function(err) {
+
+	outputString = outputString + FILLER_STRING_2;
+	fs.writeFile(LARGEST_DONOR_OUTPUT_FILE, outputString, function(err) {
 		if(err) {
 			return console.log(err);
 		}
 	});
-
 }
 
 updateCurrentDonations();
