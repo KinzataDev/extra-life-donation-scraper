@@ -4,8 +4,9 @@ var fs = require('fs');
 
 // patricipant ids for extra-life
 var userIds = [
-	// Put participant ids here to gather and use multiple participant's data
 ];
+
+var teamId = 0; // Replace with Team ID
 
 var mostRecentDonations = [];
 
@@ -20,6 +21,7 @@ var RECENT_DONATIONS_LIMIT = 5;
 var LARGEST_DONATIONS_LIMIT = 10;
 
 var LARGEST_DONOR_OUTPUT_FILE = "/tmp/largest_donation.txt";
+var TOTAL_DONATION_AMOUNT_FILE = "/tmp/total_donations.txt";
 
 var TOP_DONORS_STRING = "Top Donors: ";
 var RECENT_DONORS_STRING = "Most Recent Donors: ";
@@ -164,6 +166,28 @@ function sortAndRender() {
 			return console.log(err);
 		}
 	});
+
+}
+
+function renderTotal() {
+    return http.get({
+        host: 'www.extra-life.org',
+        path: '/index.cfm?fuseaction=donorDrive.team&teamID=' + teamId + '&format=json'
+    }, function(response) {
+        var body = '';
+        response.on('data', function(d) {
+            body += d;
+        });
+        response.on('end', function() {
+            var parsed = JSON.parse(body);
+			fs.writeFile(TOTAL_DONATION_AMOUNT_FILE, parsed.totalRaisedAmount, function(err) {
+				if(err) {
+					return console.log(err);
+				}
+			});
+        });
+    });
 }
 
 updateCurrentDonations();
+renderTotal();
