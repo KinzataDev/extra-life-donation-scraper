@@ -1,4 +1,4 @@
-var http = require('http');
+var https = require('https');
 var sprintf = require('sprintf');
 var fs = require('fs');
 
@@ -41,7 +41,7 @@ function updateCurrentDonations() {
 // Make request to extra-life for a given user
 function getDonationInfoJSON(userId, callback) {
 
-    return http.get({
+    return https.get({
         host: 'www.extra-life.org',
         path: '/index.cfm?fuseaction=donorDrive.participantDonations&participantID=' + userId + '&format=json'
     }, function(response) {
@@ -142,17 +142,19 @@ function sortAndRender() {
 		return b - a;
 	});
 
+	var largestLoopLimit = largestDonations.length > LARGEST_DONATIONS_LIMIT ? LARGEST_DONATIONS_LIMIT : largestDonations.length;
+	var recentLoopLimit = mostRecentDonations.length > RECENT_DONATIONS_LIMIT ? RECENT_DONATIONS_LIMIT : mostRecentDonations.length;
 
 	var outputString = TOP_DONORS_STRING;
-	for( var i = 0; i < LARGEST_DONATIONS_LIMIT; i++ ) {
-		var largestString = sprintf("%s: $%s | ", largestDonations[i].name, largestDonations[i].amount);
+	for( var i = 0; i < largestLoopLimit; i++ ) {
+		var largestString = sprintf("%s: $%s - ", largestDonations[i].name, largestDonations[i].amount);
 		outputString = outputString + largestString;
 	}
 
 	outputString = outputString + FILLER_STRING_1;
 	outputString = outputString + RECENT_DONORS_STRING;
-	for( var i = 0; i < RECENT_DONATIONS_LIMIT; i++ ) {
-		var recentString = sprintf("%s: %s | ", mostRecentDonations[i].donorName, mostRecentDonations[i].donationAmount);
+	for( var i = 0; i < recentLoopLimit; i++ ) {
+		var recentString = sprintf("%s: %s - ", mostRecentDonations[i].donorName, mostRecentDonations[i].donationAmount);
 		outputString = outputString + recentString;
 	}
 
