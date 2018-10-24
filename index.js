@@ -1,6 +1,6 @@
-var https = require('https');
 var sprintf = require('sprintf');
 var fs = require('fs');
+var extraApi = require('extra-life-api');
 
 // patricipant ids for extra-life
 var userIds = [
@@ -20,8 +20,8 @@ var MAX_NAME_LENGTH = 50;
 var RECENT_DONATIONS_LIMIT = 5;
 var LARGEST_DONATIONS_LIMIT = 10;
 
-var LARGEST_DONOR_OUTPUT_FILE = "/tmp/largest_donation.txt";
-var TOTAL_DONATION_AMOUNT_FILE = "/tmp/total_donations.txt";
+var DONOR_FILE = "/tmp/largest_donation.txt";
+var TOTAL_DONATION_AMOUNT_FILE = "/tmp/largest_donation.txt";
 
 var TOP_DONORS_STRING = "Top Donors: ";
 var RECENT_DONORS_STRING = "Most Recent Donors: ";
@@ -43,39 +43,34 @@ function updateCurrentDonations() {
 // Make request to extra-life for a given user
 function getDonationInfoJSON(userId, callback) {
 
-    return https.get({
-        host: 'www.extra-life.org',
-        path: '/index.cfm?fuseaction=donorDrive.participantDonations&participantID=' + userId + '&format=json'
-    }, function(response) {
-        var body = '';
-        response.on('data', function(d) {
-            body += d;
-        });
-        response.on('end', function() {
-            var parsed = JSON.parse(body);
+	extraApi.getUserDonations(userId)
+		.then((data) => 
+		{	
 			numRequests++;
-			callback(parsed);
-        });
-    });
+			callback(data.donations);
+		})
+		.catch(() => {
+			console.log(e);
+	   });
 }
 
 // Parse and clean user and donation data, add to each holding object
 function addToCurrentData( data ) {
 	data.forEach( function(e) {
 
-		if( e.donorName == null ) {
-			e.donorName = NULL_VALUE_REPLACEMENT;
+		if( e.displayName == "Anonymous" ) {
+			e.displayName = NULL_VALUE_REPLACEMENT;
 		}
 		else {
-			e.donorName = e.donorName.substr(0, MAX_NAME_LENGTH);
+			e.displayName = e.displayName.substr(0, MAX_NAME_LENGTH);
 		}
 
-		if( e.donationAmount == null ) {
-			e.donationAmount = NULL_VALUE_REPLACEMENT;
+		if( e.amount == null ) {
+			e.amount = NULL_VALUE_REPLACEMENT;
 		}
 		else {
 			// Not a fan of this, but it works.  The fact that null values won't be a number is the reasoning
-			e.donationAmount = "$" + e.donationAmount;
+			e.amount = "$" + e.amount;
 		}
 
 		mostRecentDonations.push(e);
@@ -90,18 +85,17 @@ function addToCurrentData( data ) {
 
 // Add donation to largest donation hash if it doesn't exist
 function addToLargestObj(obj) {
-	var name = obj.donorName;
+	var name = obj.displayName;
 	if( name == NULL_VALUE_REPLACEMENT ) {
 		return;
 	}
 
-	var amount = obj.donationAmount;
+	var amount = obj.amount;
 	if( amount == NULL_VALUE_REPLACEMENT ) {
 		return;
 	}
 
 	amount = amount.substr(1); // Remove the $
-
 	var timestamp = obj.createdOn;
 
 	// This was built this way so that this script can be ran over the same data multiple times
@@ -139,8 +133,8 @@ function sortAndRender() {
 	});
 
 	mostRecentDonations.sort( function(a,b) {
-		var a = new Date( a.createdOn );
-		var b = new Date( b.createdOn );
+		var a = new Date( a.createdDateUTC );
+		var b = new Date( b.createdDateUTC );
 		return b - a;
 	});
 
@@ -156,12 +150,12 @@ function sortAndRender() {
 	outputString = outputString + FILLER_STRING_1;
 	outputString = outputString + RECENT_DONORS_STRING;
 	for( var i = 0; i < recentLoopLimit; i++ ) {
-		var recentString = sprintf("%s: %s - ", mostRecentDonations[i].donorName, mostRecentDonations[i].donationAmount);
+		var recentString = sprintf("%s: %s - ", mostRecentDonations[i].displayName, mostRecentDonations[i].amount);
 		outputString = outputString + recentString;
 	}
 
 	outputString = outputString + FILLER_STRING_2;
-	fs.writeFile(LARGEST_DONOR_OUTPUT_FILE, outputString, function(err) {
+	fs.writeFile(DONOR_FILE, outputString, function(err) {
 		if(err) {
 			return console.log(err);
 		}
@@ -170,22 +164,17 @@ function sortAndRender() {
 }
 
 function renderTotal() {
-    return http.get({
-        host: 'www.extra-life.org',
-        path: '/index.cfm?fuseaction=donorDrive.team&teamID=' + teamId + '&format=json'
-    }, function(response) {
-        var body = '';
-        response.on('data', function(d) {
-            body += d;
-        });
-        response.on('end', function() {
-            var parsed = JSON.parse(body);
-			fs.writeFile(TOTAL_DONATION_AMOUNT_FILE, parsed.totalRaisedAmount, function(err) {
-				if(err) {
-					return console.log(err);
-				}
-			});
-        });
+	extraApi.getTeamInfo(teamId)
+	.then((data) =>
+	{
+		fs.writeFile(TOTAL_DONATION_AMOUNT_FILE, data.sumDonations, function(err) {
+			if(err) {
+				return console.log(err);
+			}
+		});
+	})
+	.catch(() => {
+         console.log(e);
     });
 }
 
